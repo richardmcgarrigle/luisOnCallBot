@@ -55,39 +55,77 @@ var intents = new builder.IntentDialog({ recognizers: [recognizer] })
 })
 .matches('checkStatus', function(session, args){
    
-    host = args.entities[0].entity
-    session.send('Ok, looking up ' + host + ' now');
+    if(args.entities.length > 0){
+        host = args.entities[0].entity;
+        session.send('Ok, looking up ' + host + ' now');
+    }
+
     var matchedHosts = hostResponse.filter(function(singleHost){
         return singleHost.host.indexOf(host) > -1;
     });
     
-    var badHosts =[];
-    
     if(matchedHosts.length > 0){
         session.send(matchedHosts.length + ' matches found for ' + host);
-        badHosts = matchedHosts.filter(function(matchedHost){
+        session.userData.badHosts = matchedHosts.filter(function(matchedHost){
             session.send(matchedHost.host + ', status: ' + matchedHost.status);
             return matchedHost.status != 'green';
         })
         
-        if(badHosts.length > 0){
-            troubleShoot(session ,badHosts);
+        if(session.userData.badHosts.length > 0){
+            session.send("I see that " + session.userData.badHosts[0].host + " is not green, do you know what its symptoms are? ");
         }
+    }
+})
+.matches('troubleshoot', function(session, args){
+    console.log('troubleshoot')
+    var symptoms = args.entities.filter(function(entity){
+        return entity.type == 'symptom';
+    })
+    troubleShoot(session, symptoms)
+    
+})
+.matches('Utilities.Confirm', function(session){
+    if(session.userData.question == 'didThatWork'){
+        session.send("Great, dont break it again.");
+    }
+    else{
+        session.send("What do you mean?");
+    }
+    
+})
+.matches('Utilities.Cancel', function(session){
+    console.log(session.userData)
+    if(session.userData.question == 'didThatWork'){
+        session.send("Oh dear... you'll need to escalate that, here are the details: " + session.userData.escalation);
+    }
+    else{
+        session.send("What do you mean?");
     }
 })
 .onDefault((session) => {
     offerHelp(session)
 });
 
+var getServiceFile = function(serviceFileName, callback){
+    var serviceFile = require('./' + serviceFileName + 'Details')
+    callback(serviceFile)
+}
+
 var offerHelp = function(session){
     session.send("I can help you find the status of a service or server, let me know if there is anything you'd like me to check", session.message.text);
 }
 
-var troubleShoot = function(session , hosts){
-    session.send("Steps to troubleshoot ..." , hosts[0].name);
+var troubleShoot = function(session, symptoms){
+    getServiceFile(session.userData.badHosts[0].host, function(jsonFile){
+        var steps = jsonFile.filter(function(symptom){
+            return symptom.symptom.indexOf(symptoms[0].entity) > -1;
+        })
+        session.userData.escalation = steps[0].escalation
+        session.send("You should " + steps[0].solution);
+        session.userData.question = 'didThatWork'
+        session.send("Did that work for you?");
+    })
 }
-
-
 
 bot.dialog('/', intents);    
 

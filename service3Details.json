@@ -1,0 +1,12 @@
+[
+    {
+		"symptom":"no response from database",
+        "solution":"restart JVMs to re-establish connection",
+		"escalation":"firstline is dbteam1, secondline contact dbteam2"
+    },
+	{
+		"symptom":"bad fetch",
+        "solution":"check that downstream services are available",
+		"escalation":"firstline is primaryTeam, secondline contact secondaryTeam"
+    }
+]
