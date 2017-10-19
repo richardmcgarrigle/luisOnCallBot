@@ -1,0 +1,14 @@
+[
+    {
+        "host":"service1",
+        "status": "green"
+    },
+    {
+        "host":"service2",
+        "status": "green"
+    },
+    {
+        "host":"service3",
+        "status": "red"
+    }
+]
